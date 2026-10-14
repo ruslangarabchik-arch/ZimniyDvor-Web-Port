@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Зимний двор</title>
+<style>
+html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:"Courier New",monospace;color:#c8c4b8;user-select:none}
+#wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+#stage{position:relative;aspect-ratio:4/3;height:100%;max-width:100%}
+canvas{width:100%;height:100%;image-rendering:pixelated;display:block}
+.ov{position:absolute;inset:0;pointer-events:none;font-size:1.9vh;text-shadow:2px 2px 0 #000}
+#hud{position:absolute;left:3%;bottom:3%;width:22%}
+.bar{height:1.0vh;background:#1a1a18;margin:.55vh 0;border:1px solid #333;position:relative}
+.bar i{display:block;height:100%}
+.bar span{position:absolute;left:105%;top:-.7vh;font-size:1.35vh;white-space:nowrap;color:#8a8678}
+.bar.low{animation:blink 1s infinite}
+@keyframes blink{50%{border-color:#a22}}
+#b-health{background:#7a1e18}#b-hunger{background:#8a6a2a}#b-thirst{background:#2a5a7a}#b-sleep{background:#5a4a7a}#b-stam{background:#777}#b-batt{background:#b8a050}
+#clockbox{position:absolute;left:3%;top:3%;font-size:1.6vh;color:#9a968a}
+#loc{font-size:1.3vh;color:#6a675e}
+#objective{font-size:1.45vh;color:#b8a878;margin-top:.8vh;max-width:40vh}#objective:before{content:'▸ '}#objective:empty{display:none}#objective.flash{animation:objf 2.5s}
+@keyframes objf{0%,40%{color:#fff3c0}100%{color:#b8a878}}
+#subs{position:absolute;left:8%;right:8%;bottom:30%;text-align:center;color:#e8e2cc;font-size:2vh;opacity:0;transition:opacity .6s;background:rgba(0,0,0,.45);padding:.6vh 1vh}#subs b{color:#c8a860}
+#chapter{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;transition:opacity 1.6s;pointer-events:none}
+#chapter .ct{font-size:4.2vh;letter-spacing:.3em;color:#cfc6ae;text-shadow:3px 3px 0 #000,0 0 20px #000}#chapter .cs{font-size:1.8vh;letter-spacing:.25em;color:#8a8270;margin-top:1.2vh}
+#prompt{position:absolute;left:0;right:0;bottom:16%;text-align:center;color:#ddd6c0}
+#prompt b{color:#e0c070}
+#msg{position:absolute;left:10%;right:10%;bottom:24%;text-align:center;transition:opacity 1s;color:#d8d0b8}
+#cross{position:absolute;left:50%;top:50%;width:.4vh;height:.4vh;background:#cfc8b0;opacity:.5;transform:translate(-50%,-50%)}
+.panel{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);pointer-events:auto;font-size:1.9vh}
+.box{background:#0e0e0d;border:2px solid #4a463e;padding:2.2vh 2.6vh;min-width:50%;max-width:80%;max-height:80%;overflow:auto;box-shadow:0 0 0 4px #000}
+.box.wide{min-width:75%}
+.title{color:#e0c070;margin-bottom:1.4vh;letter-spacing:.2em}.title.small{margin-top:1.6vh;font-size:1.6vh}
+.dim{color:#6f6b60;font-size:1.6vh;margin:.5vh 0}
+.row{display:flex;justify-content:space-between;align-items:center;padding:.45vh 0;border-bottom:1px dashed #2a2824}
+.cols{display:flex;gap:3vh}.col{flex:1}
+button{font-family:inherit;font-size:1.6vh;background:#1c1b18;color:#c8c4b8;border:1px solid #4a463e;padding:.4vh 1vh;margin-left:.6vh;cursor:pointer}
+button:hover{background:#3a2a1a;color:#fff}button.wide{width:100%;margin:1vh 0 0}
+.hint{color:#5a574e;font-size:1.4vh;margin-top:1.4vh;text-align:right}
+.text{line-height:1.5;margin-bottom:1.6vh}.btns{display:flex;gap:1vh;justify-content:flex-end;flex-wrap:wrap}
+.paper{background:#cdc6ae;color:#2a2620;padding:3vh;max-width:55%;line-height:1.55;font-size:2vh;box-shadow:6px 6px 0 #000;transform:rotate(-1deg);text-shadow:none}
+.paper .hint{color:#6a6250}
+.menu{display:flex;flex-direction:column;align-items:center;gap:1.2vh}
+.menu button{font-size:2.2vh;width:34vh;padding:.9vh;margin:0;background:rgba(10,10,10,.8)}
+.logo{font-size:6vh;letter-spacing:.35em;color:#b9b2a0;text-shadow:3px 3px 0 #000,0 0 18px #000;margin-bottom:.5vh}.logo.small{font-size:4vh}.logo.red{color:#8a1a14}
+.sub{color:#77736a;letter-spacing:.3em;margin-bottom:3vh}.foot{color:#4f4c44;font-size:1.4vh;margin-top:3vh}
+#menu,#death,#pause{background:rgba(0,0,0,.35)}
+#loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000;gap:2vh;pointer-events:none}
+#loading div{width:30vh;height:.8vh;border:1px solid #444}#loadbar{height:100%;background:#776;width:0}
+</style></head><body>
+<div id="wrap"><div id="stage"><canvas id="c"></canvas>
+<div class="ov" id="hudlayer">
+  <div id="cross"></div>
+  <div id="clockbox"><div id="clock"></div><div id="loc"></div><div id="objective"></div></div>
+  <div id="hud">
+    <div class="bar"><i id="b-health"></i><span>здоровье</span></div>
+    <div class="bar"><i id="b-hunger"></i><span>еда</span></div>
+    <div class="bar"><i id="b-thirst"></i><span>вода</span></div>
+    <div class="bar"><i id="b-sleep"></i><span>сон</span></div>
+    <div class="bar" style="height:.5vh"><i id="b-stam"></i></div>
+    <div class="bar" id="batt" style="height:.5vh;width:40%"><i id="b-batt"></i><span>фонарь</span></div>
+  </div>
+  <div id="prompt"></div><div id="msg"></div><div id="subs"></div><div id="chapter"></div>
+</div>
+<div class="panel" id="inv"></div><div class="panel" id="cont"></div><div class="panel" id="note"></div><div class="panel" id="dialog"></div>
+<div class="panel" id="help"></div><div class="panel" id="pause"></div><div class="panel" id="death"></div><div class="panel" id="menu"></div>
+<div id="loading"><span id="loadlabel">ЗАГРУЗКА ТЕКСТУР И 3D-МОДЕЛЕЙ</span><div><i id="loadbar" style="display:block"></i></div><small style="color:#777;max-width:60%;text-align:center;line-height:1.5">Первый запуск может занять некоторое время. Не закрывайте вкладку.</small></div>
+</div></div>
+<script src="game.js"></script>
+</body></html>
